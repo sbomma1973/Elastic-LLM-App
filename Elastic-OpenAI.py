@@ -14,7 +14,6 @@ import requests
 from datetime import datetime
 import json
 import yaml
-
 import tiktoken
 
 
@@ -25,25 +24,20 @@ def read_from_file():
         return data
 
 
-log = logging.getLogger("ProcessLog")
-log.info('Setting Datetime:')
 
 now = datetime.now();
 dt_string = now.strftime("%m%d%Y %H:%M:%S")
-logging.info('Executing Ingest Script:', dt_string)
 
 
 # Elastic Seaerch Connect Parametres
 def es_connect(cloud_id, username, password):
     es = Elasticsearch(cloud_id=cloud_id, http_auth=(username, password))
-    print(es.info())
+    #print(es.info())
     return es
 
 
 # Search Queries to be executed
 def search(query_txt, username, password, cloud_id1, index_name):
-    log.info("username:", username)
-    log.info("password:", password)
 
     es = es_connect(cloud_id1, username, password)
     query = {
@@ -67,8 +61,6 @@ def search(query_txt, username, password, cloud_id1, index_name):
 
 
 def search_elser(query_txt, username, password, cloud_id1, index_name):
-    log.info("username:", username)
-    log.info("password:", password)
 
     es = es_connect(cloud_id1, username, password)
     query = {
@@ -95,8 +87,6 @@ def search_elser(query_txt, username, password, cloud_id1, index_name):
     return hit
 
 def search_bm25(query_txt, username, password, cloud_id1, index_name):
-    log.info("username:", username)
-    log.info("password:", password)
 
     es = es_connect(cloud_id1, username, password)
     query = {
@@ -138,7 +128,7 @@ def chat_gpt(prompt, model="gpt-3.5-turbo", max_tokens=1024, max_context_tokens=
     # Truncate the prompt content to fit within the model's context length
     truncated_prompt, word_count = truncate_text(prompt, max_context_tokens - max_tokens - safety_margin)
     openai_token_count = encoding_token_count(prompt, model)
-    print(f"word_count = {word_count}, openai_token_count = {openai_token_count}")
+    #print(f"word_count = {word_count}, openai_token_count = {openai_token_count}")
 
     response = openai.ChatCompletion.create(model=model,
                                             messages=[
@@ -146,6 +136,14 @@ def chat_gpt(prompt, model="gpt-3.5-turbo", max_tokens=1024, max_context_tokens=
                                                 {"role": "user", "content": truncated_prompt}])
 
     return response["choices"][0]["message"]["content"], word_count, openai_token_count
+
+
+def listToString(s):
+    # initialize an empty string
+    str1 = " "
+
+    # return string
+    return (str1.join(s))
 
 
 # Main Starts here
@@ -158,8 +156,7 @@ def main(ivalue=None):
     index_name = data['index_name']
     openai.api_key = data['OpenAPIKey']
 
-    log = logging.getLogger("scriptlog")
-    log.info('Setting Datetime:')
+
 
     st.title("Foodie Network Search Experience")
     with st.form("chat_form"):
@@ -169,7 +166,7 @@ def main(ivalue=None):
 
     if submit_button:
 
-        gpt_col, elser_col, bm25col = st.columns([4,6,6])
+        gpt_col, elser_col, bm25col = st.columns(3)
         gpt_col.subheader("Open AI Output")
         elser_col.subheader("ESRE Search")
         bm25col.subheader("Keyword Search")
@@ -177,9 +174,10 @@ def main(ivalue=None):
         resp, url = search(query, username, password, cloud_id1, index_name)
         prompt = f"Answer this question: {query}\nUsing only the information from Sysco Foodie Website: {resp}\nIf the answer is not contained in the supplied doc reply '{negResponse}' and nothing else"
         answer, word_count, openai_token_count = chat_gpt(prompt)
-        print("resp>", resp)
-        print("url>", url)
-        print("answer>", answer)
+        #print("prompt>", prompt)
+        #print("resp>", resp)
+        #print("url>", url)
+        #print("answer>", answer)
 
         if negResponse in answer:
             gpt_col.write(f"ChatGPT: {answer.strip()}")
@@ -188,16 +186,14 @@ def main(ivalue=None):
 
         try:
             hit = search_elser(query, username, password, cloud_id1, index_name)
-            for num,doc in enumerate(hit):
-                #value = hit.json.dumps(doc['fields']['ur'])
-                #elser_col.write(value)
-                #print ((doc['fields']['url']+doc['fields']['title']).strip())
-                elser_col.write(doc['fields']['url'] + doc['fields']['title'])
+            hit_str = json.dumps(hit)
+            hit_dict = json.loads(hit_str)
+            #print(hit_dict)
 
-                #ivalue +=  str(doc['fields']['url']+doc['fields']['title'])
-
-            print ('value>', ivalue)
-            #elser_col.write(ivalue)
+            for dict in hit_dict:
+                msg1= listToString(dict['fields']['title'])
+                msg2= listToString(dict['fields']['url'])
+                elser_col.write(f"{msg1}\n{msg2}")
 
         except Exception as error:
               elser_col.write("nothing returned", error)
@@ -205,14 +201,14 @@ def main(ivalue=None):
 
         try:
             hit = search_bm25(query, username, password, cloud_id1, index_name)
-            for num, doc in enumerate(hit):
-                # print ((doc['fields']['url']+doc['fields']['title']).strip())
-                bm25col.write(doc['fields']['url'] + doc['fields']['title'])
+            hit_str = json.dumps(hit)
+            hit_dict = json.loads(hit_str)
+            #print(hit_dict)
 
-                # ivalue +=  str(doc['fields']['url']+doc['fields']['title'])
-
-            print('value>', ivalue)
-            # elser_col.write(ivalue)
+            for dict in hit_dict:
+                msg1= listToString(dict['fields']['title'])
+                msg2= listToString(dict['fields']['url'])
+                bm25col.write(f"{msg1} \n {msg2}")
 
         except Exception as error:
             elser_col.write("nothing returned", error)
@@ -225,6 +221,8 @@ def click_button_ok():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+
+    st.set_page_config(layout="wide")
     # Using object notation
     #st.sidebar.title('Configuration Params')
 
@@ -243,7 +241,8 @@ if __name__ == '__main__':
             f"""
              <style>
              .stApp {{
-                 background-image: url("https://cdn.pixabay.com/photo/2019/04/24/11/27/flowers-4151900_960_720.jpg");
+                 #background-image: url("https://cdn.pixabay.com/photo/2019/04/24/11/27/flowers-4151900_960_720.jpg");
+                 #background-image: calum-lewis-vA1L1jRTM70-unsplash.jpg 
                  background-attachment: fixed;
                  background-size: cover
              }}

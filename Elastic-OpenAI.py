@@ -5,12 +5,9 @@
 
 # import statments
 
-import os
-import logging
 import streamlit as st
 import openai
 from elasticsearch import Elasticsearch
-import requests
 from datetime import datetime
 import json
 import yaml
@@ -128,7 +125,7 @@ def chat_gpt(prompt, model="gpt-3.5-turbo", max_tokens=1024, max_context_tokens=
     # Truncate the prompt content to fit within the model's context length
     truncated_prompt, word_count = truncate_text(prompt, max_context_tokens - max_tokens - safety_margin)
     openai_token_count = encoding_token_count(prompt, model)
-    #print(f"word_count = {word_count}, openai_token_count = {openai_token_count}")
+    print(f"word_count = {word_count}, openai_token_count = {openai_token_count}")
 
     response = openai.ChatCompletion.create(model=model,
                                             messages=[
@@ -158,7 +155,7 @@ def main(ivalue=None):
 
 
 
-    st.title("Foodie Network Search Experience")
+    st.title("Elastic Search")
     with st.form("chat_form"):
         query = st.text_input("Search: ")
         submit_button = st.form_submit_button("Send")
@@ -172,17 +169,17 @@ def main(ivalue=None):
         bm25col.subheader("Keyword Search")
 
         resp, url = search(query, username, password, cloud_id1, index_name)
-        prompt = f"Answer this question: {query}\nUsing only the information from Sysco Foodie Website: {resp}\nIf the answer is not contained in the supplied doc reply '{negResponse}' and nothing else"
+        prompt = f"Answer this question: {query}\nUsing only the information from Website: {resp}\nIf the answer is not contained in the supplied doc reply '{negResponse}' and nothing else"
         answer, word_count, openai_token_count = chat_gpt(prompt)
-        #print("prompt>", prompt)
-        #print("resp>", resp)
+        print("prompt>", prompt)
+        print("resp>", resp)
         #print("url>", url)
-        #print("answer>", answer)
+        print("answer>", answer)
 
         if negResponse in answer:
             gpt_col.write(f"ChatGPT: {answer.strip()}")
         else:
-            gpt_col.write(f"ChatGPT: {answer.strip()}\n\nRecipie-url: {url}")
+            gpt_col.write(f"ChatGPT: {answer.strip()}\n\nurl: {url}")
 
         try:
             hit = search_elser(query, username, password, cloud_id1, index_name)

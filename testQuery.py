@@ -1,5 +1,4 @@
 from elasticsearch import Elasticsearch
-import requests
 from datetime import datetime
 import json
 import yaml
@@ -30,7 +29,7 @@ def search (query_txt):
                                 }
                 }
           }
-    index=index_name
+   index=index_name
     fields = ["body_content","url","title"]
 
     resp = es.search(index=index_name,fields=fields, query=query, size=3, source=False)

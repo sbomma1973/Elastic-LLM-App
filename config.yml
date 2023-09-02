@@ -1,5 +1,5 @@
-cloud_id: "LLM-Test:dXMtZWFzdC0xLmF3cy5mb3VuZC5pbzo0NDMkYjM2ZWY3Mjg5M2E3NDIwNjkyMTUzN2FkMDA2Zjc1YmEkNjk2ZGRiZmNkODM2NDIzNWFlMDRlNDE4MGI1ZWNmNGI="
-username: "elastic"
-password: "4tDKz8RjJGkTugyWlSLjzQXL"
+cloud_id: ""
+username: ""
+password: ""
 index_name: "search-sysco-recipes"
 OpenAPIKey: ""
